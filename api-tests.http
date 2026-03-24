@@ -1,0 +1,63 @@
+@baseUrl = http://localhost:5001
+@projectId = 69c1332bbfc3d21bbfaef099
+@repoUrl = https://github.com/expressjs/express
+
+### Health Check
+GET {{baseUrl}}/health
+
+### Simulate Load Without Project Context
+POST {{baseUrl}}/simulate
+Content-Type: application/json
+
+{
+  "users": 250
+}
+
+### Simulate Load With Project Context
+POST {{baseUrl}}/simulate
+Content-Type: application/json
+
+{
+  "users": 500,
+  "projectId": "{{projectId}}"
+}
+
+### Analyze Repository Using GitHub URL
+POST {{baseUrl}}/analyze-repo
+Content-Type: application/json
+
+{
+  "repoUrl": "{{repoUrl}}"
+}
+
+### Analyze Repository Using Zip Upload
+# Update the file path before running this request.
+POST {{baseUrl}}/analyze-repo
+Content-Type: multipart/form-data; boundary=ProjectCarsBoundary
+
+--ProjectCarsBoundary
+Content-Disposition: form-data; name="zipFile"; filename="sample-project.zip"
+Content-Type: application/zip
+
+< ./tmp/sample-project.zip
+--ProjectCarsBoundary--
+
+### Get Architecture By Project ID
+GET {{baseUrl}}/architecture/{{projectId}}
+
+### Get Analysis Report By Project ID
+GET {{baseUrl}}/analysis/{{projectId}}
+
+### Get Car View By Project ID
+GET {{baseUrl}}/car-view/{{projectId}}
+
+### Invalid Simulation Request Example
+POST {{baseUrl}}/simulate
+Content-Type: application/json
+
+{
+  "users": 0
+}
+
+### Invalid Project ID Example
+GET {{baseUrl}}/architecture/invalid-project-id
