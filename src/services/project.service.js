@@ -71,10 +71,9 @@ async function getAnalysisByProjectId(projectId) {
 }
 
 async function getCarViewByProjectId(projectId) {
-  const architecture = await getArchitectureByProjectId(projectId);
   const report = await getAnalysisByProjectId(projectId);
 
-  return mapToCarView(architecture, report);
+  return mapToCarView(report);
 }
 
 module.exports = {

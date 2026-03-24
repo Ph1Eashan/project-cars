@@ -17,6 +17,7 @@ router.post(
   repositoryController.analyzeRepository
 );
 
+router.get("/rules", repositoryController.getRules);
 router.get("/architecture/:id", validate(projectIdParamSchema, "params"), repositoryController.getArchitecture);
 router.get("/analysis/:id", validate(projectIdParamSchema, "params"), repositoryController.getAnalysis);
 router.get("/car-view/:id", validate(projectIdParamSchema, "params"), repositoryController.getCarView);

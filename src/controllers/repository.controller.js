@@ -1,5 +1,6 @@
 const repositoryAnalysisService = require("../services/repository-analysis.service");
 const projectService = require("../services/project.service");
+const { listActiveRules } = require("../services/analysis-rules");
 const { asyncHandler } = require("../utils/async-handler");
 
 const analyzeRepository = asyncHandler(async (req, res) => {
@@ -39,9 +40,14 @@ const getCarView = asyncHandler(async (req, res) => {
   res.status(200).json(carView);
 });
 
+const getRules = asyncHandler(async (req, res) => {
+  res.status(200).json(listActiveRules());
+});
+
 module.exports = {
   analyzeRepository,
   getArchitecture,
   getAnalysis,
-  getCarView
+  getCarView,
+  getRules
 };

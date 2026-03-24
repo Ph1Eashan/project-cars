@@ -31,6 +31,9 @@ describe("analysis engine rule system", () => {
     });
 
     expect(report.score).toBeGreaterThanOrEqual(0);
+    expect(typeof report.summary).toBe("string");
+    expect(report.summary).not.toContain("rule(s) failed");
+    expect(Array.isArray(report.topIssues)).toBe(true);
     expect(report.breakdown.security.score).toBeLessThan(100);
     expect(report.breakdown.security.rules.length).toBeGreaterThan(0);
     expect(report.breakdown.security.totalRules).toBe(report.breakdown.security.rules.length);
@@ -77,5 +80,13 @@ describe("analysis engine rule system", () => {
     expect(triggeredSecurityRules.length).toBeGreaterThan(0);
     expect(report.issues.some((issue) => issue.ruleId === "security.missing-auth")).toBe(true);
     expect(report.security).toBeLessThan(100);
+    expect(report.summary).toContain("API routes were found");
+    expect(report.topIssues[0]).toEqual(
+      expect.objectContaining({
+        rule: expect.any(String),
+        impact: expect.any(Number),
+        message: expect.any(String)
+      })
+    );
   });
 });

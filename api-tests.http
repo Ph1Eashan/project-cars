@@ -5,6 +5,9 @@
 ### Health Check
 GET {{baseUrl}}/health
 
+### Get Active Analysis Rules
+GET {{baseUrl}}/rules
+
 ### Simulate Load Without Project Context
 POST {{baseUrl}}/simulate
 Content-Type: application/json
@@ -46,9 +49,79 @@ Content-Type: application/zip
 GET {{baseUrl}}/architecture/{{projectId}}
 
 ### Get Analysis Report By Project ID
+# Expected additions:
+# {
+#   "summary": "Overall backend health scored 72/100. 4 rule(s) failed, with the biggest pressure showing in performance.",
+#   "topIssues": [
+#     {
+#       "rule": "missing-auth",
+#       "impact": 25,
+#       "message": "API routes were found, but no authentication middleware or auth guard signals were detected."
+#     }
+#   ]
+# }
 GET {{baseUrl}}/analysis/{{projectId}}
 
 ### Get Car View By Project ID
+# Expected shape:
+# {
+#   "car": {
+#     "engine": {
+#       "status": "healthy|weak|broken|missing",
+#       "reasons": [
+#         {
+#           "rule": "failed-rule-name",
+#           "message": "Human-readable explanation"
+#         }
+#       ]
+#     },
+#     "turbo": {
+#       "status": "healthy|weak|broken|missing",
+#       "reasons": [
+#         {
+#           "rule": "failed-rule-name",
+#           "message": "Human-readable explanation"
+#         }
+#       ]
+#     },
+#     "brakes": {
+#       "status": "healthy|weak|broken|missing",
+#       "reasons": [
+#         {
+#           "rule": "failed-rule-name",
+#           "message": "Human-readable explanation"
+#         }
+#       ]
+#     },
+#     "transmission": {
+#       "status": "healthy|weak|broken|missing",
+#       "reasons": [
+#         {
+#           "rule": "failed-rule-name",
+#           "message": "Human-readable explanation"
+#         }
+#       ]
+#     },
+#     "suspension": {
+#       "status": "healthy|weak|broken|missing",
+#       "reasons": [
+#         {
+#           "rule": "failed-rule-name",
+#           "message": "Human-readable explanation"
+#         }
+#       ]
+#     },
+#     "security": {
+#       "status": "healthy|weak|broken|missing",
+#       "reasons": [
+#         {
+#           "rule": "failed-rule-name",
+#           "message": "Human-readable explanation"
+#         }
+#       ]
+#     }
+#   }
+# }
 GET {{baseUrl}}/car-view/{{projectId}}
 
 ### Invalid Simulation Request Example

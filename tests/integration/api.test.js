@@ -67,6 +67,23 @@ describe("Project Cars API integration", () => {
     expect(response.body.service).toBe("project-cars-backend");
   });
 
+  test("GET /rules returns active rules grouped by category", async () => {
+    const response = await request(app).get("/rules");
+
+    expect(response.statusCode).toBe(200);
+    expect(Object.keys(response.body)).toEqual(
+      expect.arrayContaining(["security", "performance", "scalability", "reliability"])
+    );
+    expect(response.body.security[0]).toEqual(
+      expect.objectContaining({
+        name: expect.any(String),
+        category: "security",
+        weight: expect.any(Number)
+      })
+    );
+    expect(response.body.security[0].evaluate).toBeUndefined();
+  });
+
   test("POST /simulate returns a stress prediction without project context", async () => {
     const response = await request(app)
       .post("/simulate")
@@ -140,11 +157,25 @@ describe("Project Cars API integration", () => {
 
     expect(analysisResponse.statusCode).toBe(200);
     expect(analysisResponse.body.score).toBeGreaterThanOrEqual(0);
+    expect(typeof analysisResponse.body.summary).toBe("string");
+    expect(Array.isArray(analysisResponse.body.topIssues)).toBe(true);
     expect(Array.isArray(analysisResponse.body.issues)).toBe(true);
+    expect(Array.isArray(analysisResponse.body.results)).toBe(true);
 
     expect(carViewResponse.statusCode).toBe(200);
-    expect(carViewResponse.body.engine).toBeDefined();
-    expect(carViewResponse.body.dashboard).toBeDefined();
+    expect(carViewResponse.body.car).toBeDefined();
+    expect(carViewResponse.body.car.engine.status).toMatch(/healthy|weak|broken|missing/);
+    expect(Array.isArray(carViewResponse.body.car.engine.reasons)).toBe(true);
+    if (carViewResponse.body.car.engine.reasons.length > 0) {
+      expect(carViewResponse.body.car.engine.reasons[0]).toEqual(
+        expect.objectContaining({
+          rule: expect.any(String),
+          message: expect.any(String)
+        })
+      );
+    }
+    expect(carViewResponse.body.car.security.status).toMatch(/healthy|weak|broken|missing/);
+    expect(Array.isArray(carViewResponse.body.car.security.reasons)).toBe(true);
   });
 
   test("POST /analyze-repo accepts a GitHub URL when archive download succeeds", async () => {

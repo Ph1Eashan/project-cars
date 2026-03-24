@@ -22,7 +22,21 @@ const CATEGORY_CONFIG = {
   }
 };
 
+function listActiveRules() {
+  return Object.fromEntries(
+    Object.entries(CATEGORY_CONFIG).map(([category, config]) => [
+      category,
+      config.rules.map((rule) => ({
+        name: rule.name,
+        category: rule.category,
+        weight: rule.weight
+      }))
+    ])
+  );
+}
+
 module.exports = {
   CATEGORY_CONFIG,
-  CATEGORY_NAMES: Object.keys(CATEGORY_CONFIG)
+  CATEGORY_NAMES: Object.keys(CATEGORY_CONFIG),
+  listActiveRules
 };

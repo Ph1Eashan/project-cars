@@ -113,8 +113,20 @@ const analysisReportSchema = new mongoose.Schema(
     performance: Number,
     scalability: Number,
     reliability: Number,
+    summary: {
+      type: String,
+      default: ""
+    },
+    topIssues: {
+      type: [mongoose.Schema.Types.Mixed],
+      default: []
+    },
     issues: {
       type: [analysisIssueSchema],
+      default: []
+    },
+    results: {
+      type: [mongoose.Schema.Types.Mixed],
       default: []
     },
     breakdown: {

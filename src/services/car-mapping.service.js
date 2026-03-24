@@ -1,27 +1,78 @@
-function determineState(metric, strong = 80, warning = 55) {
-  if (metric >= strong) {
+const COMPONENT_RULE_MAP = {
+  engine: ["performance.blocking-operations", "performance.chatty-database"],
+  turbo: ["performance.missing-caching", "performance.large-service-surface"],
+  brakes: ["reliability.missing-central-error-handler", "reliability.sparse-defensive-handling"],
+  transmission: ["scalability.synchronous-flows", "scalability.monolith-coupling"],
+  suspension: ["scalability.missing-queues", "scalability.stateful-implementation"],
+  security: [
+    "security.missing-auth",
+    "security.missing-validation",
+    "security.public-mutable-routes",
+    "security.secret-leak-risk",
+    "security.auth-without-validation"
+  ]
+};
+
+function determineComponentStatus(failedRules) {
+  if (failedRules.length === 0) {
     return "healthy";
   }
 
-  if (metric >= warning) {
-    return "weak";
+  const highestImpact = Math.max(...failedRules.map((rule) => rule.impact || 0));
+
+  if (highestImpact >= 20) {
+    return "broken";
   }
 
-  return "critical";
+  return "weak";
 }
 
-function mapToCarView(architecture, analysisReport) {
-  return {
-    engine: determineState(analysisReport.scalability),
-    gearSystem: determineState(analysisReport.performance),
-    transmission: architecture.dependencies.length > 0 ? "healthy" : "missing",
-    fuelTank: architecture.databaseInteractions.length > 0 ? "healthy" : "missing",
-    brakes: determineState(analysisReport.security),
-    chassis: determineState(analysisReport.reliability),
-    dashboard: architecture.apis.length > 0 ? "healthy" : "weak"
-  };
+function mapRuleResultsById(ruleResults = []) {
+  return new Map(ruleResults.map((rule) => [rule.ruleId, rule]));
+}
+
+function mapRulesToCarState(ruleResults, componentRuleMap = COMPONENT_RULE_MAP) {
+  const ruleResultMap = mapRuleResultsById(ruleResults);
+
+  const car = Object.fromEntries(
+    Object.entries(componentRuleMap).map(([component, ruleIds]) => {
+      const mappedRules = ruleIds
+        .map((ruleId) => ruleResultMap.get(ruleId))
+        .filter(Boolean);
+
+      if (mappedRules.length === 0) {
+        return [
+          component,
+          {
+            status: "missing",
+            reasons: []
+          }
+        ];
+      }
+
+      const failedRules = mappedRules.filter((rule) => !rule.passed);
+      return [
+        component,
+        {
+          status: determineComponentStatus(failedRules),
+          reasons: failedRules.map((rule) => ({
+            rule: rule.name,
+            message: rule.message
+          }))
+        }
+      ];
+    })
+  );
+
+  return { car };
+}
+
+function mapToCarView(analysisReport) {
+  return mapRulesToCarState(analysisReport.results || []);
 }
 
 module.exports = {
+  COMPONENT_RULE_MAP,
+  mapRulesToCarState,
   mapToCarView
 };
