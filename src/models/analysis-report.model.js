@@ -2,7 +2,7 @@ const mongoose = require("mongoose");
 
 const ruleBreakdownSchema = new mongoose.Schema(
   {
-    ruleId: {
+    name: {
       type: String,
       required: true
     },
@@ -10,17 +10,21 @@ const ruleBreakdownSchema = new mongoose.Schema(
       type: String,
       required: true
     },
-    title: {
-      type: String,
-      required: true
+    weight: {
+      type: Number,
+      default: 0
     },
-    description: {
-      type: String,
-      required: true
+    passed: {
+      type: Boolean,
+      default: true
     },
-    severity: {
+    impact: {
+      type: Number,
+      default: 0
+    },
+    message: {
       type: String,
-      required: true
+      default: null
     },
     triggered: {
       type: Boolean,
@@ -29,6 +33,10 @@ const ruleBreakdownSchema = new mongoose.Schema(
     scoreImpact: {
       type: Number,
       default: 0
+    },
+    ruleId: {
+      type: String,
+      required: true
     },
     issues: {
       type: [mongoose.Schema.Types.Mixed],
@@ -51,6 +59,10 @@ const categoryBreakdownSchema = new mongoose.Schema(
       default: 1
     },
     totalImpact: {
+      type: Number,
+      default: 0
+    },
+    passedRules: {
       type: Number,
       default: 0
     },

@@ -11,6 +11,7 @@ function generateReport(scanResult) {
     scalability: ruleEvaluation.categoryScores.scalability,
     reliability: ruleEvaluation.categoryScores.reliability,
     issues: ruleEvaluation.issues,
+    results: ruleEvaluation.results,
     breakdown: ruleEvaluation.breakdown
   };
 }

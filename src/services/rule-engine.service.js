@@ -1,44 +1,32 @@
-const { clampScore, getSeverityWeight } = require("./analysis-rules/helpers");
+const { clampScore } = require("./analysis-rules/helpers");
 
-function normalizeRuleResult(rule, category, result) {
-  if (!result) {
-    return {
-      ruleId: rule.id,
-      category,
-      title: rule.title,
-      description: rule.description,
-      severity: rule.severity,
-      triggered: false,
-      scoreImpact: 0,
-      issues: []
-    };
-  }
-
-  const issues = result.issues || (result.issue ? [result.issue] : []);
-  const scoreImpact =
-    typeof result.scoreImpact === "number"
-      ? result.scoreImpact
-      : issues.reduce((total, issue) => total + getSeverityWeight(issue.severity), 0);
+function normalizeRuleResult(rule, result) {
+  const normalizedResult = result || {
+    passed: true,
+    impact: 0,
+    message: "Rule passed.",
+    issues: []
+  };
 
   return {
-    ruleId: rule.id,
-    category,
-    title: rule.title,
-    description: rule.description,
-    severity: rule.severity,
-    triggered: issues.length > 0,
-    scoreImpact,
-    issues
+    name: rule.name,
+    category: rule.category,
+    weight: rule.weight,
+    passed: Boolean(normalizedResult.passed),
+    impact: normalizedResult.passed ? 0 : Math.max(0, normalizedResult.impact || 0),
+    message: normalizedResult.message || null,
+    issues: normalizedResult.issues || [],
+    ruleId: `${rule.category}.${rule.name}`,
+    triggered: !normalizedResult.passed,
+    scoreImpact: normalizedResult.passed ? 0 : Math.max(0, normalizedResult.impact || 0)
   };
 }
 
 function evaluateCategory(category, categoryConfig, scanResult) {
-  const ruleResults = categoryConfig.rules.map((rule) =>
-    normalizeRuleResult(rule, category, rule.evaluate(scanResult))
-  );
+  const ruleResults = categoryConfig.rules.map((rule) => normalizeRuleResult(rule, rule.evaluate(scanResult)));
   const issues = ruleResults.flatMap((result) => result.issues);
-  const totalImpact = ruleResults.reduce((sum, result) => sum + result.scoreImpact, 0);
-  const triggeredRules = ruleResults.filter((result) => result.triggered).length;
+  const totalImpact = ruleResults.reduce((sum, result) => sum + result.impact, 0);
+  const triggeredRules = ruleResults.filter((result) => !result.passed).length;
   const score = clampScore(100 - totalImpact);
 
   return {
@@ -75,6 +63,7 @@ function evaluateRuleSet(categoryConfigMap, scanResult) {
         score: result.score,
         weight: result.weight,
         totalImpact: result.totalImpact,
+        passedRules: result.totalRules - result.triggeredRules,
         triggeredRules: result.triggeredRules,
         totalRules: result.totalRules,
         rules: result.ruleResults
@@ -86,7 +75,8 @@ function evaluateRuleSet(categoryConfigMap, scanResult) {
     overallScore: Math.round(weightedTotal / totalWeight),
     categoryScores,
     breakdown,
-    issues: categoryEntries.flatMap(([, result]) => result.issues)
+    issues: categoryEntries.flatMap(([, result]) => result.issues),
+    results: categoryEntries.flatMap(([, result]) => result.ruleResults)
   };
 }
 

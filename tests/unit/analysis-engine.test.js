@@ -36,9 +36,12 @@ describe("analysis engine rule system", () => {
     expect(report.breakdown.security.totalRules).toBe(report.breakdown.security.rules.length);
     expect(report.breakdown.security.rules[0]).toEqual(
       expect.objectContaining({
-        ruleId: expect.any(String),
+        name: expect.any(String),
         category: "security",
-        triggered: expect.any(Boolean)
+        weight: expect.any(Number),
+        passed: expect.any(Boolean),
+        impact: expect.any(Number),
+        message: expect.anything()
       })
     );
   });
@@ -69,7 +72,7 @@ describe("analysis engine rule system", () => {
       totalDirectories: 1
     });
 
-    const triggeredSecurityRules = report.breakdown.security.rules.filter((rule) => rule.triggered);
+    const triggeredSecurityRules = report.breakdown.security.rules.filter((rule) => !rule.passed);
 
     expect(triggeredSecurityRules.length).toBeGreaterThan(0);
     expect(report.issues.some((issue) => issue.ruleId === "security.missing-auth")).toBe(true);

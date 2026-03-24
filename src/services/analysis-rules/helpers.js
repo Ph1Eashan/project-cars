@@ -2,16 +2,6 @@ function clampScore(score) {
   return Math.max(0, Math.min(100, score));
 }
 
-function getSeverityWeight(severity) {
-  const weights = {
-    low: 8,
-    medium: 15,
-    high: 25
-  };
-
-  return weights[severity] || 10;
-}
-
 function buildIssue({
   category,
   severity,
@@ -32,14 +22,50 @@ function buildIssue({
   };
 }
 
-function createRule({ id, title, description, severity = "medium", evaluate }) {
+function createRule({ name, category, weight, evaluate }) {
   return {
-    id,
-    title,
-    description,
-    severity,
+    name,
+    category,
+    weight,
     evaluate
   };
+}
+
+function buildRuleResult({
+  passed,
+  impact = 0,
+  message,
+  issues = []
+}) {
+  return {
+    passed,
+    impact,
+    message,
+    issues
+  };
+}
+
+function buildFailedRule({
+  weight,
+  message,
+  issues = [],
+  impact
+}) {
+  return buildRuleResult({
+    passed: false,
+    impact: typeof impact === "number" ? impact : weight,
+    message,
+    issues
+  });
+}
+
+function buildPassedRule(message) {
+  return buildRuleResult({
+    passed: true,
+    impact: 0,
+    message,
+    issues: []
+  });
 }
 
 function getFilesMatching(scanResult, patterns) {
@@ -50,8 +76,10 @@ function getFilesMatching(scanResult, patterns) {
 
 module.exports = {
   clampScore,
-  getSeverityWeight,
   buildIssue,
   createRule,
+  buildRuleResult,
+  buildFailedRule,
+  buildPassedRule,
   getFilesMatching
 };

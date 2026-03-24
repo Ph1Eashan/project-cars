@@ -23,5 +23,6 @@ const CATEGORY_CONFIG = {
 };
 
 module.exports = {
-  CATEGORY_CONFIG
+  CATEGORY_CONFIG,
+  CATEGORY_NAMES: Object.keys(CATEGORY_CONFIG)
 };
