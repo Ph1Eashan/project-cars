@@ -1,137 +1,63 @@
-# Project Cars Backend
+# Project Cars Monorepo
 
-Backend Architecture Visualization & Intelligence Platform built with Node.js, Express, and MongoDB.
+This repository is now an npm workspace monorepo with:
 
-## Features
+- `backend`: Express + MongoDB backend
+- `frontend`: React + Vite frontend
 
-- Analyze a GitHub repository URL or uploaded zip file
-- Extract architecture signals for APIs, services, middleware, dependencies, and database usage
-- Generate heuristic reports for security, performance, scalability, and reliability
-- Map system health into a car-style component view
-- Simulate load impact with bottleneck and warning output
-
-## Project Structure
+## Workspaces
 
 ```text
-src/
-  config/
-  controllers/
-  middlewares/
-  models/
-  routes/
-  services/
-  utils/
+backend/
+frontend/
 ```
 
-## Setup
+## Commands
 
-1. Install dependencies:
+Install all workspace dependencies:
 
 ```bash
 npm install
 ```
 
-2. Create your environment file:
+Run the backend:
 
 ```bash
-cp .env.example .env
+npm run dev:backend
 ```
 
-3. Start MongoDB and update `MONGODB_URI` in `.env` if needed.
-
-4. Run the server:
+Run the frontend:
 
 ```bash
-npm start
+npm run dev:frontend
 ```
 
-The API will start on `http://localhost:5001` by default.
+Run both together:
 
-## Automated Tests
+```bash
+npm run dev
+```
 
-Run the Supertest integration suite with:
+Run backend tests:
 
 ```bash
 npm test
 ```
 
-The tests use an in-memory MongoDB instance and cover the core API flows plus validation failures.
-
-## Legacy Migration
-
-Normalize legacy `Project`, `Architecture`, and `AnalysisReport` documents with:
+Rebuild summaries and top issues for existing analysis reports:
 
 ```bash
-node scripts/migrate.js
+node scripts/backfill-analysis.js
 ```
 
-Preview the migration without writing any data:
+Preview the backfill safely without writing:
 
 ```bash
-node scripts/migrate.js --dry-run
+node scripts/backfill-analysis.js --dry-run
 ```
 
-The migration script:
-
-- detects legacy unstructured documents
-- normalizes them into the current typed schema
-- reconciles duplicate architecture/report documents down to one canonical document per project
-- updates project references safely
-- stores backups before any destructive write in non-dry-run mode
-
-## Production Hardening
-
-- Structured JSON logging with Winston
-- Request logging with response time, IP, and request ID
-- Helmet security headers
-- Environment-driven CORS allowlist via `CLIENT_ORIGIN`
-- Global API rate limiting via `RATE_LIMIT_WINDOW_MS` and `RATE_LIMIT_MAX_REQUESTS`
-- Compression enabled for API responses
-
-## Endpoints
-
-- `POST /analyze-repo`
-- `GET /architecture/:id`
-- `GET /analysis/:id`
-- `GET /car-view/:id`
-- `POST /simulate`
-- `GET /health`
-
-## Request Examples
-
-Analyze a GitHub repository:
+Run frontend end-to-end tests with Playwright:
 
 ```bash
-curl -X POST http://localhost:5001/analyze-repo \
-  -H "Content-Type: application/json" \
-  -d '{"repoUrl":"https://github.com/expressjs/express"}'
+npx playwright test
 ```
-
-Analyze a zip upload:
-
-```bash
-curl -X POST http://localhost:5001/analyze-repo \
-  -F "zipFile=@/absolute/path/to/project.zip"
-```
-
-Simulate load:
-
-```bash
-curl -X POST http://localhost:5001/simulate \
-  -H "Content-Type: application/json" \
-  -d '{"users":500}'
-```
-
-## API Test Collection
-
-Use [api-tests.http](/Users/macbookpro/Work/project%20cars/api-tests.http) for ready-made requests covering:
-
-- `GET /health`
-- `POST /simulate`
-- `POST /analyze-repo` with GitHub URL
-- `POST /analyze-repo` with zip upload
-- `GET /architecture/:id`
-- `GET /analysis/:id`
-- `GET /car-view/:id`
-
-Update `@baseUrl`, `@projectId`, and the zip file path as needed before running the requests from your IDE REST client.

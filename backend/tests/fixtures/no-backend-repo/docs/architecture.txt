@@ -1,0 +1,1 @@
+Static architecture notes without executable backend code.
