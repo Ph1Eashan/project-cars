@@ -5,6 +5,7 @@ import { DashboardHeader } from "./components/DashboardHeader";
 import { ScoreSummaryCard } from "./components/ScoreSummaryCard";
 import { TopRecommendationsPanel } from "./components/TopRecommendationsPanel";
 import { TopIssuesPanel } from "./components/TopIssuesPanel";
+import { WorstRoutesPanel } from "./components/WorstRoutesPanel";
 import { useDashboardData } from "./hooks/useDashboardData";
 import { analyzeRepository } from "./lib/api";
 
@@ -85,6 +86,7 @@ export default function App() {
           <CarStatusPanel carView={carView} />
           <div className="grid gap-6">
             <TopIssuesPanel analysis={analysis} rules={rules} loading={busy} />
+            <WorstRoutesPanel analysis={analysis} loading={busy} />
             <TopRecommendationsPanel analysis={analysis} loading={busy} />
           </div>
         </section>

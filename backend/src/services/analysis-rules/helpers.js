@@ -2,6 +2,42 @@ function clampScore(score) {
   return Math.max(0, Math.min(100, score));
 }
 
+const RECOMMENDATION_NORMALIZATION_RULES = [
+  {
+    pattern: /^Use asynchronous alternatives or move the work outside the request lifecycle\.?$/i,
+    value: "Use asynchronous alternatives or move blocking work out of the request lifecycle."
+  },
+  {
+    pattern: /^Move blocking work to async workflows, workers, or external processing layers\.?$/i,
+    value: "Use asynchronous alternatives or move blocking work out of the request lifecycle."
+  },
+  {
+    pattern: /^Review module boundaries and isolate independent workflows behind contracts or events\.?$/i,
+    value: "Review module boundaries and isolate workflows behind clear contracts or events."
+  },
+  {
+    pattern: /^Review query efficiency, batching, indexing, and repeated database round trips\.?$/i,
+    value: "Review query efficiency, batching, indexing, and repeated database round trips."
+  }
+];
+
+function normalizeRecommendation(recommendation) {
+  if (!recommendation) {
+    return null;
+  }
+
+  const trimmedRecommendation = recommendation.trim();
+  if (!trimmedRecommendation) {
+    return null;
+  }
+
+  const matchedRule = RECOMMENDATION_NORMALIZATION_RULES.find(({ pattern }) =>
+    pattern.test(trimmedRecommendation)
+  );
+
+  return matchedRule ? matchedRule.value : trimmedRecommendation;
+}
+
 function buildIssue({
   category,
   severity,
@@ -17,7 +53,7 @@ function buildIssue({
     title,
     description,
     file,
-    recommendation,
+    recommendation: normalizeRecommendation(recommendation),
     ruleId
   };
 }
@@ -44,7 +80,7 @@ function buildRuleResult({
     impact,
     message,
     issues,
-    recommendation
+    recommendation: normalizeRecommendation(recommendation)
   };
 }
 
@@ -96,5 +132,6 @@ module.exports = {
   buildFailedRule,
   buildPassedRule,
   formatRatio,
-  getFilesMatching
+  getFilesMatching,
+  normalizeRecommendation
 };
