@@ -12,6 +12,7 @@ module.exports = [
     name: "blocking-operations",
     category: "performance",
     weight: 8,
+    rootCauseKey: "sync-bottlenecks",
     evaluate: (scanResult) => {
       const blockingCount = scanResult.blockingPatterns.length;
       if (blockingCount === 0) {

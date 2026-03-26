@@ -108,6 +108,26 @@ const analysisIssueSchema = new mongoose.Schema(
   }
 );
 
+const worstRouteSchema = new mongoose.Schema(
+  {
+    path: {
+      type: String,
+      default: ""
+    },
+    dbCallCount: {
+      type: Number,
+      default: 0
+    },
+    bottleneckCount: {
+      type: Number,
+      default: 0
+    }
+  },
+  {
+    _id: false
+  }
+);
+
 const analysisReportSchema = new mongoose.Schema(
   {
     projectId: {
@@ -145,6 +165,10 @@ const analysisReportSchema = new mongoose.Schema(
       enum: ["low", "medium", "high"],
       default: "high"
     },
+    criticalIssues: {
+      type: Number,
+      default: 0
+    },
     summary: {
       type: String,
       default: ""
@@ -153,6 +177,50 @@ const analysisReportSchema = new mongoose.Schema(
       detectedLanguage: {
         type: String,
         default: "Unknown"
+      },
+      recommendations: {
+        type: [String],
+        default: []
+      },
+      debugValidation: {
+        routeCount: {
+          type: Number,
+          default: 0
+        },
+        detectedRoutes: {
+          type: [String],
+          default: []
+        },
+        dbCallCount: {
+          type: Number,
+          default: 0
+        },
+        bottleneckCount: {
+          type: Number,
+          default: 0
+        },
+        routes: {
+          type: [
+            new mongoose.Schema(
+              {
+                path: {
+                  type: String,
+                  default: ""
+                },
+                dbCallCount: {
+                  type: Number,
+                  default: 0
+                },
+                bottleneckCount: {
+                  type: Number,
+                  default: 0
+                }
+              },
+              { _id: false }
+            )
+          ],
+          default: []
+        }
       }
     },
     systemClassification: {
@@ -161,6 +229,10 @@ const analysisReportSchema = new mongoose.Schema(
     },
     topIssues: {
       type: [mongoose.Schema.Types.Mixed],
+      default: []
+    },
+    worstRoutes: {
+      type: [worstRouteSchema],
       default: []
     },
     issues: {

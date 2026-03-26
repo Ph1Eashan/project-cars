@@ -10,6 +10,7 @@ module.exports = [
     name: "synchronous-flows",
     category: "scalability",
     weight: 15,
+    rootCauseKey: "sync-bottlenecks",
     evaluate: (scanResult) => {
       const blockingCount = scanResult.blockingPatterns.length;
       if (blockingCount < 2) {

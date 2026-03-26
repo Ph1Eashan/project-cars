@@ -1,5 +1,11 @@
 const { clampScore } = require("./analysis-rules/helpers");
 
+const SEVERITY_MULTIPLIERS = {
+  low: 0.5,
+  medium: 1,
+  high: 1.5
+};
+
 function deriveSeverity(impact = 0) {
   if (impact >= 20) {
     return "high";
@@ -12,6 +18,10 @@ function deriveSeverity(impact = 0) {
   return "low";
 }
 
+function applySeverityWeight(impact = 0, severity = "low") {
+  return Math.round(Math.max(0, impact) * (SEVERITY_MULTIPLIERS[severity] || SEVERITY_MULTIPLIERS.low));
+}
+
 function normalizeRuleResult(rule, result) {
   const normalizedResult = result || {
     passed: true,
@@ -22,6 +32,7 @@ function normalizeRuleResult(rule, result) {
   };
 
   const impact = normalizedResult.passed ? 0 : Math.max(0, normalizedResult.impact || 0);
+  const severity = deriveSeverity(impact);
   const recommendation =
     normalizedResult.recommendation ||
     normalizedResult.issues?.find((issue) => issue.recommendation)?.recommendation ||
@@ -31,22 +42,24 @@ function normalizeRuleResult(rule, result) {
     name: rule.name,
     category: rule.category,
     weight: rule.weight,
+    rootCauseKey: rule.rootCauseKey || `${rule.category}.${rule.name}`,
     passed: Boolean(normalizedResult.passed),
     impact,
-    severity: deriveSeverity(impact),
+    severity,
     message: normalizedResult.message || null,
     recommendation,
     issues: normalizedResult.issues || [],
     ruleId: `${rule.category}.${rule.name}`,
     triggered: !normalizedResult.passed,
-    scoreImpact: impact
+    scoreImpact: normalizedResult.passed ? 0 : applySeverityWeight(impact, severity)
   };
 }
 
 function evaluateCategory(category, categoryConfig, scanResult) {
   const ruleResults = categoryConfig.rules.map((rule) => normalizeRuleResult(rule, rule.evaluate(scanResult)));
   const issues = ruleResults.flatMap((result) => result.issues);
-  const totalImpact = ruleResults.reduce((sum, result) => sum + result.impact, 0);
+  const rawImpact = ruleResults.reduce((sum, result) => sum + result.impact, 0);
+  const totalImpact = ruleResults.reduce((sum, result) => sum + result.scoreImpact, 0);
   const triggeredRules = ruleResults.filter((result) => !result.passed).length;
   const score = clampScore(100 - totalImpact);
 
@@ -54,6 +67,7 @@ function evaluateCategory(category, categoryConfig, scanResult) {
     score,
     weight: categoryConfig.weight,
     totalImpact,
+    rawImpact,
     triggeredRules,
     totalRules: ruleResults.length,
     issues,
@@ -84,6 +98,7 @@ function evaluateRuleSet(categoryConfigMap, scanResult) {
         score: result.score,
         weight: result.weight,
         totalImpact: result.totalImpact,
+        rawImpact: result.rawImpact,
         passedRules: result.totalRules - result.triggeredRules,
         triggeredRules: result.triggeredRules,
         totalRules: result.totalRules,
@@ -102,6 +117,7 @@ function evaluateRuleSet(categoryConfigMap, scanResult) {
 }
 
 module.exports = {
+  applySeverityWeight,
   deriveSeverity,
   normalizeRuleResult,
   evaluateCategory,

@@ -161,11 +161,12 @@ function mergeAnalyzerResults(results) {
     services: dedupeBy(results.flatMap((result) => result.services || []), (item) => `${item.file}:${item.name}`),
     repositories: dedupeBy(results.flatMap((result) => result.repositories || []), (item) => `${item.file}:${item.name}`),
     apis: dedupeBy(results.flatMap((result) => result.apis || []), (item) => `${item.method}:${item.path}:${item.file}`),
-    dependencies: dedupeBy(results.flatMap((result) => result.dependencies || []), (item) => `${item.from}:${item.to}`),
-    databaseInteractions: dedupeBy(
-      results.flatMap((result) => result.databaseInteractions || []),
-      (item) => `${item.file}:${item.type}`
+    routeTraces: dedupeBy(
+      results.flatMap((result) => result.routeTraces || []),
+      (item) => `${item.method}:${item.path}:${item.file}`
     ),
+    dependencies: dedupeBy(results.flatMap((result) => result.dependencies || []), (item) => `${item.from}:${item.to}`),
+    databaseInteractions: results.flatMap((result) => result.databaseInteractions || []),
     middleware: dedupeBy(results.flatMap((result) => result.middleware || []), (item) => `${item.file}:${item.name}`),
     authSignals: [...new Set(results.flatMap((result) => result.authSignals || []))],
     validationSignals: [...new Set(results.flatMap((result) => result.validationSignals || []))],
@@ -181,12 +182,31 @@ function mergeAnalyzerResults(results) {
     healthEndpointSignals: [...new Set(results.flatMap((result) => result.healthEndpointSignals || []))],
     blockingPatterns: dedupeBy(
       results.flatMap((result) => result.blockingPatterns || []),
-      (item) => `${item.file}:${item.pattern}`
+      (item) => `${item.file}:${item.pattern}:${item.locationIndex ?? 0}`
     ),
     tryCatchCount: results.reduce((sum, result) => sum + (result.tryCatchCount || 0), 0)
   };
 
   return merged;
+}
+
+function buildDebugValidation(scanResult) {
+  const detectedRoutes = [...new Set((scanResult.apis || []).map((api) => `${api.method} ${api.path}`))];
+  const routeBreakdown = (scanResult.routeTraces || scanResult.apis || []).map((route) => ({
+    path: `${route.method} ${route.path}`,
+    dbCallCount: route.dbCallCount || 0,
+    bottleneckCount: route.bottleneckCount || 0
+  }));
+  const dbCallCount = routeBreakdown.reduce((total, route) => total + route.dbCallCount, 0);
+  const bottleneckCount = routeBreakdown.reduce((total, route) => total + route.bottleneckCount, 0);
+
+  return {
+    routeCount: (scanResult.apis || []).length,
+    detectedRoutes,
+    dbCallCount,
+    bottleneckCount,
+    routes: routeBreakdown
+  };
 }
 
 function routeAnalyzers(detectedLanguage, scannedFiles) {
@@ -209,10 +229,12 @@ function scanRepository(sourcePath) {
   const baseContext = createBaseScanContext(sourcePath);
   const analyzerResults = routeAnalyzers(baseContext.detectedLanguage, baseContext.files);
   const merged = mergeAnalyzerResults(analyzerResults);
+  const debugValidation = buildDebugValidation(merged);
 
   return {
     files: baseContext.files,
     ...merged,
+    debugValidation,
     detectedLanguage: baseContext.detectedLanguage,
     fileTree: baseContext.fileTree,
     totalFiles: baseContext.totalFiles,
@@ -273,5 +295,6 @@ module.exports = {
   detectProjectLanguage,
   mergeAnalyzerResults,
   routeAnalyzers,
-  scanRepository
+  scanRepository,
+  buildDebugValidation
 };

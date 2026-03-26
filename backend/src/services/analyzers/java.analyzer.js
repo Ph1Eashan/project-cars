@@ -1,3 +1,6 @@
+const { debugDetectedRoutes, getDetectedRoutes } = require("./analyzer-debug.helper");
+const NON_SOURCE_PATH_PATTERN = /(^|\/)(tests?|__tests__|fixtures|mocks|scripts)(\/|$)/i;
+
 function extractAnnotationPath(content, annotationName) {
   const match = content.match(new RegExp(`@${annotationName}\\s*\\(([^)]*)\\)`, "m"));
   if (!match) {
@@ -72,8 +75,9 @@ function detectSpringDependencies(content, file) {
 }
 
 function analyzeJavaRepository(files) {
-  const javaFiles = files.filter((file) => file.path.toLowerCase().endsWith(".java"));
-  const gradleOrMavenFiles = files.filter((file) => /(pom\.xml|build\.gradle)$/i.test(file.path));
+  const analyzableFiles = files.filter((file) => !NON_SOURCE_PATH_PATTERN.test(file.path));
+  const javaFiles = analyzableFiles.filter((file) => file.path.toLowerCase().endsWith(".java"));
+  const gradleOrMavenFiles = analyzableFiles.filter((file) => /(pom\.xml|build\.gradle)$/i.test(file.path));
 
   const services = [];
   const repositories = [];
@@ -123,12 +127,18 @@ function analyzeJavaRepository(files) {
 
     dependencies.push(...detectSpringDependencies(content, file.path));
 
+    const executableContent = content
+      .split("\n")
+      .filter((line) => !/^\s*import\s+/.test(line))
+      .join("\n");
     const dbMatches =
-      content.match(/\b(findAll|findById|save|deleteById|count|EntityManager|JdbcTemplate|JpaRepository|CrudRepository)\b/g) || [];
-    dbMatches.forEach(() => {
+      executableContent.match(/\.\s*(findAll|findById|save|deleteById|count)\s*\(|\b(EntityManager|JdbcTemplate)\b/g) || [];
+    dbMatches.forEach((match, index) => {
       databaseInteractions.push({
         file: file.path,
-        type: "query-operation"
+        type: "query-operation",
+        operation: match.replace(/[.\s(]/g, ""),
+        locationIndex: index
       });
     });
 
@@ -186,19 +196,29 @@ function analyzeJavaRepository(files) {
 
     const syncPatterns = ["Thread.sleep", "Files.readAllBytes", "Files.readString"];
     syncPatterns.forEach((pattern) => {
-      if (content.includes(pattern)) {
+      const matches = content.match(new RegExp(pattern.replace(".", "\\."), "g")) || [];
+      matches.forEach((_, index) => {
         blockingPatterns.push({
           file: file.path,
-          pattern
+          pattern,
+          locationIndex: index
         });
-      }
+      });
     });
   });
+
+  debugDetectedRoutes("Java", apis);
 
   return {
     services,
     repositories,
     apis,
+    routeTraces: apis.map((api) => ({
+      method: api.method,
+      path: api.path,
+      file: api.file,
+      relatedFiles: [api.file]
+    })),
     dependencies,
     databaseInteractions,
     middleware: [],
@@ -220,5 +240,6 @@ function analyzeJavaRepository(files) {
 }
 
 module.exports = {
-  analyzeJavaRepository
+  analyzeJavaRepository,
+  getDetectedRoutes
 };

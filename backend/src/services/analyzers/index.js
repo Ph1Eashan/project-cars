@@ -1,7 +1,9 @@
-const { analyzeNodeRepository } = require("./node.analyzer");
-const { analyzeJavaRepository } = require("./java.analyzer");
+const { analyzeNodeRepository, getDetectedRoutes: getDetectedNodeRoutes } = require("./node.analyzer");
+const { analyzeJavaRepository, getDetectedRoutes: getDetectedJavaRoutes } = require("./java.analyzer");
 
 module.exports = {
   analyzeJavaRepository,
-  analyzeNodeRepository
+  analyzeNodeRepository,
+  getDetectedJavaRoutes,
+  getDetectedNodeRoutes
 };

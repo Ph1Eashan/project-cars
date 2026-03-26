@@ -71,6 +71,11 @@ const databaseInteractionSchema = new mongoose.Schema(
       type: String,
       required: true,
       trim: true
+    },
+    operation: {
+      type: String,
+      default: null,
+      trim: true
     }
   },
   {

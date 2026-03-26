@@ -8,6 +8,7 @@ const {
   routeAnalyzers,
   scanRepository
 } = require("../../src/services/repository-analysis.service");
+const { analyzeJavaRepository, analyzeNodeRepository, getDetectedJavaRoutes, getDetectedNodeRoutes } = require("../../src/services/analyzers");
 
 describe("repository language detection", () => {
   test("detects Node.js from package.json", () => {
@@ -92,5 +93,113 @@ describe("analyzer routing", () => {
       ])
     );
     expect(result.apis.length).toBe(3);
+  });
+});
+
+describe("route detection accuracy", () => {
+  function copyFixtureToTemp(fixtureName) {
+    const fixtureRoot = path.resolve(__dirname, "..", "fixtures", fixtureName);
+    const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), `project-cars-${fixtureName}-`));
+    const destination = path.join(tempRoot, fixtureName);
+    fs.cpSync(fixtureRoot, destination, { recursive: true });
+    return destination;
+  }
+
+  test("detects all expected Node routes", () => {
+    const repoPath = copyFixtureToTemp("node-routes-repo");
+    const baseContext = createBaseScanContext(repoPath);
+    const result = analyzeNodeRepository(baseContext.files);
+    const detectedRoutes = getDetectedNodeRoutes(result.apis);
+
+    expect(result.apis).toHaveLength(5);
+    expect(detectedRoutes).toEqual({
+      routes: ["GET /health", "GET /cars", "POST /cars", "PATCH /cars/:id", "DELETE /cars/:id"],
+      count: 5
+    });
+  });
+
+  test("detects all expected Java routes", () => {
+    const repoPath = copyFixtureToTemp("java-routes-repo");
+    const baseContext = createBaseScanContext(repoPath);
+    const result = analyzeJavaRepository(baseContext.files);
+    const detectedRoutes = getDetectedJavaRoutes(result.apis);
+
+    expect(result.apis).toHaveLength(5);
+    expect(detectedRoutes).toEqual({
+      routes: ["GET /cars/health", "GET /cars", "POST /cars", "PATCH /cars/{id}", "DELETE /cars/{id}"],
+      count: 5
+    });
+  });
+
+  test("matches the real project-cars backend route count and debug validation output", () => {
+    const backendRoot = path.resolve(__dirname, "..", "..");
+    const result = scanRepository(backendRoot);
+
+    expect(result.debugValidation.routeCount).toBe(7);
+    expect(result.debugValidation.detectedRoutes).toEqual(
+      expect.arrayContaining([
+        "GET /health",
+        "POST /analyze-repo",
+        "GET /rules",
+        "GET /architecture/:id",
+        "GET /analysis/:id",
+        "GET /car-view/:id",
+        "POST /simulate"
+      ])
+    );
+    expect(result.debugValidation.dbCallCount).toBe(
+      result.debugValidation.routes.reduce((total, route) => total + route.dbCallCount, 0)
+    );
+    expect(result.debugValidation.bottleneckCount).toBe(
+      result.debugValidation.routes.reduce((total, route) => total + route.bottleneckCount, 0)
+    );
+    expect(result.debugValidation.routes).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          path: "POST /analyze-repo",
+          dbCallCount: expect.any(Number),
+          bottleneckCount: expect.any(Number)
+        }),
+        expect.objectContaining({
+          path: "GET /analysis/:id",
+          dbCallCount: expect.any(Number),
+          bottleneckCount: expect.any(Number)
+        })
+      ])
+    );
+    expect(result.debugValidation.routes).toHaveLength(7);
+  });
+
+  test("captures granular per-route DB and bottleneck metrics", () => {
+    const repoPath = copyFixtureToTemp("node-route-metrics-repo");
+    const result = scanRepository(repoPath);
+
+    const carsRoute = result.debugValidation.routes.find((route) => route.path === "GET /cars");
+    const healthRoute = result.debugValidation.routes.find((route) => route.path === "GET /health");
+    const slowRoute = result.debugValidation.routes.find((route) => route.path === "POST /slow-cars");
+
+    expect(carsRoute).toEqual(
+      expect.objectContaining({
+        path: "GET /cars",
+        dbCallCount: 2,
+        bottleneckCount: 0
+      })
+    );
+    expect(healthRoute).toEqual(
+      expect.objectContaining({
+        path: "GET /health",
+        dbCallCount: 0,
+        bottleneckCount: 0
+      })
+    );
+    expect(slowRoute).toEqual(
+      expect.objectContaining({
+        path: "POST /slow-cars",
+        dbCallCount: 0,
+        bottleneckCount: 2
+      })
+    );
+    expect(result.debugValidation.dbCallCount).toBe(2);
+    expect(result.debugValidation.bottleneckCount).toBe(2);
   });
 });

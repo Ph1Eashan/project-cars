@@ -22,11 +22,12 @@ function buildIssue({
   };
 }
 
-function createRule({ name, category, weight, evaluate }) {
+function createRule({ name, category, weight, evaluate, rootCauseKey = null }) {
   return {
     name,
     category,
     weight,
+    rootCauseKey,
     evaluate
   };
 }

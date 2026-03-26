@@ -180,6 +180,7 @@ describe("Project Cars API integration", () => {
     );
     expect(typeof analysisResponse.body.summary).toBe("string");
     expect(Array.isArray(analysisResponse.body.topIssues)).toBe(true);
+    expect(Array.isArray(analysisResponse.body.worstRoutes)).toBe(true);
     if (analysisResponse.body.topIssues.length > 0) {
       expect(analysisResponse.body.topIssues[0]).toEqual(
         expect.objectContaining({
@@ -188,6 +189,15 @@ describe("Project Cars API integration", () => {
           severity: expect.stringMatching(/low|medium|high/),
           message: expect.any(String),
           recommendation: expect.any(String)
+        })
+      );
+    }
+    if (analysisResponse.body.worstRoutes.length > 0) {
+      expect(analysisResponse.body.worstRoutes[0]).toEqual(
+        expect.objectContaining({
+          path: expect.any(String),
+          dbCallCount: expect.any(Number),
+          bottleneckCount: expect.any(Number)
         })
       );
     }
